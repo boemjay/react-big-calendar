@@ -68,7 +68,7 @@ class EventWrapper extends React.Component {
   }
 
   render() {
-    const { event, type, continuesPrior, continuesAfter } = this.props
+    const { event, type, continuesAfter } = this.props
 
     let { children } = this.props
 
@@ -135,10 +135,10 @@ class EventWrapper extends React.Component {
         let EndAnchor = null
 
         if (type === 'date') {
-          StartAnchor = !continuesPrior && this.renderAnchor('Left')
+          // StartAnchor = !continuesPrior && this.renderAnchor('Left')
           EndAnchor = !continuesAfter && this.renderAnchor('Right')
         } else {
-          StartAnchor = !continuesPrior && this.renderAnchor('Up')
+          // StartAnchor = !continuesPrior && this.renderAnchor('Up')
           EndAnchor = !continuesAfter && this.renderAnchor('Down')
         }
 
