@@ -64,7 +64,7 @@ export default [
     input,
     output: { file: pkg.module, format: 'esm' },
     // prevent bundling all dependencies
-    external: id => !id.startsWith('.') && !id.startsWith('/'),
+    // external: id => !id.startsWith('.') && !id.startsWith('/'),
     plugins: [babel(babelOptions), sizeSnapshot()],
   },
 ]
