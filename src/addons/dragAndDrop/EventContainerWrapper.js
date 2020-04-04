@@ -10,6 +10,7 @@ import Selection, {
 import TimeGridEvent from '../../TimeGridEvent'
 import { dragAccessors } from './common'
 import NoopWrapper from '../../NoopWrapper'
+import { WeekContext } from '../../Week'
 
 const pointInColumn = (bounds, { x, y }) => {
   const { left, right, top } = bounds
@@ -53,10 +54,15 @@ class EventContainerWrapper extends React.Component {
 
   reset() {
     if (this.state.event)
-      this.setState({ event: null, top: null, height: null })
+      this.setState({
+        event: null,
+        top: null,
+        height: null,
+        additionalDragPreviews: null,
+      })
   }
 
-  update(event, { startDate, endDate, top, height }) {
+  update(event, { startDate, endDate, top, height }, additionalEvents) {
     const { event: lastEvent } = this.state
     if (
       lastEvent &&
@@ -70,6 +76,7 @@ class EventContainerWrapper extends React.Component {
       top,
       height,
       event: { ...event, start: startDate, end: endDate },
+      additionalDragPreviews: additionalEvents,
     })
   }
 
@@ -95,7 +102,11 @@ class EventContainerWrapper extends React.Component {
       'minutes'
     )
 
-    this.update(event, slotMetrics.getRange(currentSlot, end, false, true))
+    this.update(
+      event,
+      slotMetrics.getRange(currentSlot, end, false, true),
+      slotMetrics.getRanges(currentSlot, end, false, true)
+    )
   }
 
   handleResize(point, boundaryBox) {
@@ -223,7 +234,7 @@ class EventContainerWrapper extends React.Component {
       localizer,
     } = this.props
 
-    let { event, top, height } = this.state
+    let { event, top, height, additionalDragPreviews } = this.state
 
     if (!event) return children
 
@@ -244,23 +255,68 @@ class EventContainerWrapper extends React.Component {
 
     return React.cloneElement(children, {
       children: (
-        <React.Fragment>
-          {events}
+        <WeekContext.Consumer>
+          {isWeek => (
+            <React.Fragment>
+              {events}
 
-          {event && (
-            <TimeGridEvent
-              event={event}
-              label={label}
-              className="rbc-addons-dnd-drag-preview"
-              style={{ top, height, width: 100 }}
-              getters={getters}
-              components={{ ...components, eventWrapper: NoopWrapper }}
-              accessors={{ ...accessors, ...dragAccessors }}
-              continuesEarlier={startsBeforeDay}
-              continuesLater={startsAfterDay}
-            />
+              {event && (
+                <TimeGridEvent
+                  event={event}
+                  label={label}
+                  className="rbc-addons-dnd-drag-preview"
+                  style={{ top, height, width: 100 }}
+                  getters={getters}
+                  components={{ ...components, eventWrapper: NoopWrapper }}
+                  accessors={{ ...accessors, ...dragAccessors }}
+                  continuesEarlier={startsBeforeDay}
+                  continuesLater={startsAfterDay}
+                />
+              )}
+
+              {isWeek &&
+                additionalDragPreviews &&
+                additionalDragPreviews.map((e, idx) => {
+                  const startsBeforeDay = slotMetrics.startsBeforeDay(
+                    e.startDate
+                  )
+                  const startsAfterDay = slotMetrics.startsAfterDay(e.endDate)
+
+                  if (startsBeforeDay) format = 'eventTimeRangeEndFormat'
+                  else if (startsAfterDay) format = 'eventTimeRangeStartFormat'
+
+                  if (startsBeforeDay && startsAfterDay)
+                    label = localizer.messages.allDay
+                  else
+                    label = localizer.format(
+                      { start: e.startDate, end: e.endDate },
+                      format
+                    )
+
+                  return (
+                    <TimeGridEvent
+                      key={idx}
+                      event={event}
+                      label={label}
+                      className="rbc-addons-dnd-drag-preview"
+                      style={{
+                        top: e.top,
+                        height: e.height,
+                        width: 100,
+                        xOffset: e.xOffset,
+                        zIndex: 1,
+                      }}
+                      getters={getters}
+                      components={{ ...components, eventWrapper: NoopWrapper }}
+                      accessors={{ ...accessors, ...dragAccessors }}
+                      continuesEarlier={startsBeforeDay}
+                      continuesLater={startsAfterDay}
+                    />
+                  )
+                })}
+            </React.Fragment>
           )}
-        </React.Fragment>
+        </WeekContext.Consumer>
       ),
     })
   }

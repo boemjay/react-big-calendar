@@ -1,7 +1,7 @@
 import PropTypes from 'prop-types'
 import React from 'react'
 
-import Week from './Week'
+import Week, { WeekContext } from './Week'
 import TimeGrid from './TimeGrid'
 
 function workWeekRange(date, options) {
@@ -15,7 +15,11 @@ class WorkWeek extends React.Component {
     let { date, ...props } = this.props
     let range = workWeekRange(date, this.props)
 
-    return <TimeGrid {...props} range={range} eventOffset={15} />
+    return (
+      <WeekContext.Provider value={true}>
+        <TimeGrid {...props} range={range} eventOffset={15} />
+      </WeekContext.Provider>
+    )
   }
 }
 

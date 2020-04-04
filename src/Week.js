@@ -4,12 +4,18 @@ import * as dates from './utils/dates'
 import { navigate } from './utils/constants'
 import TimeGrid from './TimeGrid'
 
+export const WeekContext = React.createContext(undefined)
+
 class Week extends React.Component {
   render() {
     let { date, ...props } = this.props
     let range = Week.range(date, this.props)
 
-    return <TimeGrid {...props} range={range} eventOffset={15} />
+    return (
+      <WeekContext.Provider value={true}>
+        <TimeGrid {...props} range={range} eventOffset={15} />
+      </WeekContext.Provider>
+    )
   }
 }
 

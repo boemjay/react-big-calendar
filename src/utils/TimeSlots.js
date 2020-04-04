@@ -130,8 +130,14 @@ export function getSlotMetrics({ min: start, max: end, step, timeslots }) {
 
       const rangeStartMin = positionFromDate(rangeStart)
       const rangeEndMin = positionFromDate(rangeEnd)
+      // step is measured in minutes
+      const renderedInColumnCell = dates.lte(
+        rangeEnd,
+        dates.add(end, -step, 'minutes')
+      )
+
       const top =
-        rangeEndMin > step * (numSlots - 1) && !dates.eq(end, rangeEnd)
+        rangeEndMin > step * (numSlots - 1) && renderedInColumnCell
           ? ((rangeStartMin - step) / (step * numSlots)) * 100
           : (rangeStartMin / (step * numSlots)) * 100
 
@@ -143,6 +149,51 @@ export function getSlotMetrics({ min: start, max: end, step, timeslots }) {
         end: positionFromDate(rangeEnd),
         endDate: rangeEnd,
       }
+    },
+
+    /**
+     * like getRange, but gives back an array, which contains additional events
+     * that can be rendered in the next column in week view, so the user gets
+     * a preview of the dragged event in week view, even if it spans over multiple days
+     */
+    getRanges(rangeStart, rangeEnd, ignoreMin, ignoreMax) {
+      if (!ignoreMin) rangeStart = dates.min(end, dates.max(start, rangeStart))
+      if (!ignoreMax) rangeEnd = dates.min(end, dates.max(start, rangeEnd))
+
+      const events = []
+      const spannedDays = dates.range(rangeStart, rangeEnd, 'day').length
+
+      // returns the date for "d", starting at 00:00:00
+      function dayStartDate(d) {
+        return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0)
+      }
+
+      for (let i = 0; i < spannedDays; i++) {
+        const localRangeStart = dayStartDate(dates.add(rangeStart, 0, 'day'))
+        const localRangeEnd = dates.add(rangeEnd, -i, 'day')
+        const rangeStartMin = 0
+        const rangeEndMin = positionFromDate(localRangeEnd)
+        const renderedInLastColumnCell = dates.lte(
+          localRangeEnd,
+          dates.add(end, -step, 'minutes')
+        )
+
+        const top =
+          rangeEndMin > step * (numSlots - 1) && renderedInLastColumnCell
+            ? ((rangeStartMin - step) / (step * numSlots)) * 100
+            : (rangeStartMin / (step * numSlots)) * 100
+
+        events.push({
+          top,
+          height: (rangeEndMin / (step * numSlots)) * 100 - top,
+          start: 0,
+          startDate: dates.add(localRangeStart, -1, 'seconds'),
+          end: positionFromDate(localRangeEnd),
+          endDate: localRangeEnd,
+          xOffset: 100 * i,
+        })
+      }
+      return events.length > 1 ? events.slice(1) : null
     },
 
     getCurrentTimePosition(rangeStart) {
